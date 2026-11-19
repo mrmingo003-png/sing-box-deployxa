@@ -1,0 +1,1 @@
+{"description":"Node.js runtime wrapper for sing-box (VLESS+WS) on Deployxa","engines":{"node":">=18"},"license":"MIT","main":"server.js","name":"sing-box-deployxa","private":true,"scripts":{"start":"node server.js"},"version":"1.0.0"}
