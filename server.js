@@ -11,9 +11,9 @@
  *     candidate paths); if it is missing, downloads the pinned
  *     release from GitHub at runtime and extracts it with pure JS
  *     (see below).
- *  2. Writes a sing-box config from env vars (PORT / UUID / WS_PATH)
+ *  2. Writes a sing-box config from env vars (PORT / UUID / APP_ROUTE)
  *     and starts sing-box listening on 127.0.0.1:<a free local port>.
- *     Inbound is VLESS over plain WebSocket at $WS_PATH; outbound is
+ *     Inbound is VLESS over plain WebSocket at $APP_ROUTE; outbound is
  *     "direct" (the platform has real internet egress).
  *  3. Listens on $PORT (the port Deployxa assigns). Plain HTTP
  *     requests (platform health checks) get 200. WebSocket upgrades
@@ -35,7 +35,7 @@
  * Env vars
  *  PORT                  port assigned by the platform (default 8080)
  *  UUID                  VLESS user id (required)
- *  WS_PATH               WebSocket path, e.g. /ws-xxxx (default /ws)
+ *  APP_ROUTE               WebSocket path, e.g. /ws-xxxx (default /ws)
  *  SINGBOX_PORT          local sing-box port (default: pick a free one)
  *  SINGBOX_VERSION       release to download if no bundled binary
  *                        (default v1.14.4 — the version verified on
@@ -66,7 +66,7 @@ const logErr = (...a) => console.error(new Date().toISOString(), '[wrapper]', ..
 
 const PORT = parseInt(process.env.PORT || '8080', 10);
 const UUID = process.env.UUID || '';
-const WS_PATH = process.env.WS_PATH || '/ws';
+const APP_ROUTE = process.env.APP_ROUTE || '/ws';
 const SINGBOX_VERSION = process.env.SINGBOX_VERSION || 'v1.14.4';
 const SINGBOX_DOWNLOAD_URL = process.env.SINGBOX_DOWNLOAD_URL || '';
 const SINGBOX_HTTP_PROXY = process.env.SINGBOX_HTTP_PROXY || '';
@@ -77,8 +77,8 @@ if (!UUID) {
   logErr('FATAL: UUID env var is required');
   process.exit(1);
 }
-if (!WS_PATH.startsWith('/')) {
-  logErr('FATAL: WS_PATH must start with /');
+if (!APP_ROUTE.startsWith('/')) {
+  logErr('FATAL: APP_ROUTE must start with /');
   process.exit(1);
 }
 if (!Number.isInteger(PORT) || PORT <= 0 || PORT > 65535) {
@@ -287,7 +287,7 @@ function buildConfig(singBoxPort) {
         listen: '127.0.0.1',
         listen_port: singBoxPort,
         users: [{ uuid: UUID }],
-        transport: { type: 'ws', path: WS_PATH },
+        transport: { type: 'ws', path: APP_ROUTE },
       },
     ],
     outbounds: [SINGBOX_HTTP_PROXY ? httpProxyOutbound(SINGBOX_HTTP_PROXY) : { type: 'direct', tag: 'direct' }],
@@ -407,13 +407,13 @@ function startFront(singBoxPort) {
     process.exit(1);
   });
   server.listen(PORT, '0.0.0.0', () => {
-    log(`listening on 0.0.0.0:${PORT} (WS ${WS_PATH} -> 127.0.0.1:${singBoxPort}, other HTTP -> 200)`);
+    log(`listening on 0.0.0.0:${PORT} (WS ${APP_ROUTE} -> 127.0.0.1:${singBoxPort}, other HTTP -> 200)`);
   });
   return server;
 }
 
 async function main() {
-  log(`starting (node=${process.version} PORT=${PORT} WS_PATH=${WS_PATH} sing-box=${SINGBOX_VERSION})`);
+  log(`starting (node=${process.version} PORT=${PORT} APP_ROUTE=${APP_ROUTE} sing-box=${SINGBOX_VERSION})`);
   log('cwd:', process.cwd());
   log('__dirname:', __dirname);
   await logDirectoryContents();
